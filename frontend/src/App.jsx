@@ -9,7 +9,6 @@ import Contact from "./components/Contact";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import PricingPage from "./pages/PricingPage";
-import PostPage from "./pages/PostPage";
 import "./App.css";
 
 function HomePage() {
@@ -24,7 +23,6 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/post" element={<PostPage />} />
     </Routes>
   </AuthProvider></BrowserRouter>;
 }
