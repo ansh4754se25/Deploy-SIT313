@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import PricingPage from "./pages/PricingPage";
 import PostPage from "./pages/PostPage";
+import BrowsePostsPage from "./pages/BrowsePostsPage";
 import "./App.css";
 
 function HomePage() {
@@ -25,6 +26,7 @@ export default function App() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/post" element={<PostPage />} />
+      <Route path="/browse" element={<BrowsePostsPage />} />
     </Routes>
   </AuthProvider></BrowserRouter>;
 }

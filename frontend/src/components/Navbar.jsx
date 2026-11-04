@@ -14,7 +14,7 @@ export default function Navbar() {
       <input type="search" aria-label="Search DEV@Deakin" placeholder="Search..." />
     </form>
     <div className="nav-actions">
-      <Link to="/post">Post</Link><Link to="/pricing">Pricing</Link>
+      <Link to="/post">Post</Link><Link to="/browse">Browse Posts</Link><Link to="/pricing">Pricing</Link>
       {user ? <><span className="nav-plan">{profile?.plan || "Free"} plan</span><button className="nav-login" type="button" onClick={() => signOut(auth)}>Logout</button></>
         : <Link className="nav-login" to="/login">Login</Link>}
     </div>

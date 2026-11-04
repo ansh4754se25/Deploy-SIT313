@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
-import { db } from "../firebase";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 const plans = [
   { name: "Free", price: "$0", description: "A good place to start sharing your ideas.", features: ["Browse community posts", "Publish up to 3 posts each month", "Standard image uploads"] },
@@ -28,12 +28,18 @@ export default function PricingPage() {
     let planSaved = false;
     const purchaseTime = new Date().toISOString();
     try {
-      await updateDoc(doc(db, "users", user.uid), { plan: "Paid", planUpdatedAt: serverTimestamp() });
+      const token = await user.getIdToken();
+      const upgradeResponse = await fetch(`${API_BASE}/plan-upgrade`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const upgradeResult = await upgradeResponse.json();
+      if (!upgradeResponse.ok) throw new Error(upgradeResult.message || "Could not update your plan.");
       planSaved = true;
       setProfile((current) => ({ ...current, plan: "Paid" }));
       setShowModal(false);
 
-      const response = await fetch("http://localhost:3000/plan-confirmation", {
+      const response = await fetch(`${API_BASE}/plan-confirmation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

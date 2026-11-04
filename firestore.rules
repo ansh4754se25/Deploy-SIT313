@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.get('plan', 'Free') == 'Free'
+        && !request.resource.data.keys().hasAny(['posts']);
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.get('plan', 'Free') == resource.data.get('plan', 'Free')
+        && request.resource.data.get('posts', []) == resource.data.get('posts', []);
+      allow delete: if false;
+    }
+
+    // Posts are read and written by the authenticated Express backend only.
+    match /posts/{postId} {
+      allow read, write: if false;
+    }
+  }
+}

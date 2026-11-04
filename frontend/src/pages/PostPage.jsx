@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { arrayUnion, doc, Timestamp, updateDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
-import { db } from "../firebase";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export default function PostPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const [postType, setPostType] = useState("Question");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
+  const [plan, setPlan] = useState("Free");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -21,29 +22,39 @@ export default function PostPage() {
       return;
     }
 
-    const cleanTags = [...new Set(tags.split(",").map((tag) => tag.trim()).filter(Boolean))].slice(0, 3);
+    const cleanTitle = title.trim();
+    const cleanBody = body.trim();
+    const cleanTags = [...new Set(tags.split(",").map((tag) => tag.trim()).filter(Boolean))];
+    if (cleanTitle.length < 3 || cleanTitle.length > 120) {
+      setMessage("The title must be between 3 and 120 characters.");
+      return;
+    }
+    if (cleanBody.length < 10 || cleanBody.length > 3000) {
+      setMessage("The description must be between 10 and 3000 characters.");
+      return;
+    }
+    if (cleanTags.length > 3 || cleanTags.some((tag) => tag.length > 30)) {
+      setMessage("Use up to 3 tags, each no longer than 30 characters.");
+      return;
+    }
     setSaving(true);
     try {
-      await updateDoc(doc(db, "users", user.uid), {
-        posts: arrayUnion({
-          id: crypto.randomUUID(),
-          type: postType,
-          title: title.trim(),
-          body: body.trim(),
-          tags: cleanTags,
-          authorId: user.uid,
-          authorName: user.displayName || profile?.name || "DEV@Deakin member",
-          createdAt: Timestamp.now(),
-        }),
+      const token = await user.getIdToken();
+      const response = await fetch(`${API_BASE}/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: postType, title: cleanTitle, body: cleanBody, tags: cleanTags, plan }),
       });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Could not publish your post.");
       setTitle("");
       setBody("");
       setTags("");
       setPostType("Question");
-      setMessage("Your post has been published.");
+      setPlan("Free");
+      setMessage(result.message || "Your post has been published.");
     } catch (error) {
-      console.error("Unable to publish post:", error);
-      setMessage("Could not publish your post. Please try again.");
+      setMessage(error.message || "Could not publish your post. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -61,13 +72,18 @@ export default function PostPage() {
 
         <h2 className="new-post-subheading">What do you want to ask or share?</h2>
         <label className="new-post-label" htmlFor="new-post-title-input">Title</label>
-        <input className="new-post-input" id="new-post-title-input" maxLength={120} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Start your question with how, what, or why" />
+        <input className="new-post-input" id="new-post-title-input" minLength={3} maxLength={120} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Start your question with how, what, or why" />
 
         <label className="new-post-label" htmlFor="new-post-body">Describe your problem</label>
-        <textarea className="new-post-input new-post-textarea" id="new-post-body" required maxLength={3000} value={body} onChange={(event) => setBody(event.target.value)} placeholder="Include what you tried and what happened." />
+        <textarea className="new-post-input new-post-textarea" id="new-post-body" minLength={10} required maxLength={3000} value={body} onChange={(event) => setBody(event.target.value)} placeholder="Include what you tried and what happened." />
 
         <label className="new-post-label" htmlFor="new-post-tags">Tags</label>
         <input className="new-post-input" id="new-post-tags" value={tags} onChange={(event) => setTags(event.target.value)} placeholder="Up to 3 tags, separated by commas (e.g. Java, React)" />
+        <fieldset className="post-type-fieldset">
+          <legend>Who can view this post?</legend>
+          <label><input type="radio" name="post-plan" value="Free" checked={plan === "Free"} onChange={() => setPlan("Free")} /> Free</label>
+          <label><input type="radio" name="post-plan" value="Paid" checked={plan === "Paid"} onChange={() => setPlan("Paid")} /> Paid plan</label>
+        </fieldset>
         <div className="new-post-actions">
           {message && <p className="new-post-message" role="status">{message}</p>}
           {!loading && !user && <p className="new-post-login-note">Log in to publish. <Link to="/login">Login</Link></p>}
